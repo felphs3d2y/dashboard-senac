@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRM - Gerenciamento de Clientes</title>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Keyframes for gradient animation - ADDED/MODIFIED FOR THIS BUTTON */
+        @keyframes animatedGradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .header-gradient {
+            background: linear-gradient(135deg, #007bff 0%, #ff8c00 100%); /* Blue to Orange */
+            color: white;
+            /* Se quiser o cabeçalho animado também, adicione: */
+            /* background-size: 200% 200%; */
+            /* animation: animatedGradient 10s ease infinite; */
+        }
+
+        .client-card {
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .client-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .search-container {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .btn-gradient {
+            background: linear-gradient(45deg, #007bff, #ff8c00); /* Blue to Orange */
+            border: none;
+            color: white;
+            transition: background 0.3s ease; /* Keep transition for hover */
+        }
+
+        .btn-gradient:hover {
+            background: linear-gradient(45deg, #0056b3, #cc7000); /* Darker shades for hover */
+            color: white;
+        }
+
+        /* NEW CLASS FOR ANIMATED BUTTONS */
+        .btn-animated-gradient {
+            /* Existing properties for the gradient animation (if enabled) */
+            background: linear-gradient(45deg, #ffffff, #f0f0f0); /* White to light gray gradient for subtle effect */
+            background-size: 200% 200%; /* Needed for animation */
+            animation: animatedGradient 10s ease infinite; /* Enable animation */
+
+            border: 1px solid #dee2e6; /* A subtle light gray border */
+            color: #343a40; /* Darker text for contrast on white background */
+        }
+
+        .btn-animated-gradient:hover {
+            transform: scale(1.05); /* Slightly enlarge on hover */
+            /* No need to change background on hover, animation handles it */
+        }
+
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 0.3rem 0.8rem;
+        }
+
+        .client-avatar {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(45deg, #007bff, #ff8c00); /* Blue to Orange */
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #6c757d;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <header class="header-gradient py-4 mb-4">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h1 class="mb-0"><i class="fas fa-users me-2"></i>Gerenciamento de Clientes</h1>
+                    <p class="mb-0 opacity-75">Sistema CRM - Controle de Clientes</p>
+                </div>
+                <div class="col-auto">
+                    <button class="btn btn-animated-gradient btn-lg" data-bs-toggle="modal" data-bs-target="#clientModal" onclick="openCreateModal()">
+                        <i class="fas fa-plus me-2"></i>Novo Cliente
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="search-container">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" id="searchInput" class="form-control" placeholder="Buscar por nome, email ou empresa...">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select id="statusFilter" class="form-select form-select-lg">
+                        <option value="">Todos os Status</option>
+                        <option value="ativo">Ativo</option>
+                        <option value="inativo">Inativo</option>
+                        <option value="prospecto">Prospecto</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col">
+                    <small class="text-muted">
+                        <span id="clientCount">0</span> cliente(s) encontrado(s)
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div id="clientsList" class="row">
+        </div>
+
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <i class="fas fa-user-slash"></i>
+            <h3>Nenhum cliente encontrado</h3>
+            <p>Não encontramos clientes com os critérios de busca especificados.</p>
+        </div>
+    </div>
+
+    <div class="modal fade" id="clientModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header header-gradient">
+                    <h5 class="modal-title" id="modalTitle">
+                        <i class="fas fa-user-plus me-2"></i>Novo Cliente
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="clientForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Nome Completo *</label>
+                                    <input type="text" id="clientName" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Email *</label>
+                                    <input type="email" id="clientEmail" class="form-control" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Telefone</label>
+                                    <input type="tel" id="clientPhone" class="form-control">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Empresa</label>
+                                    <input type="text" id="clientCompany" class="form-control">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Status</label>
+                                    <select id="clientStatus" class="form-select">
+                                        <option value="ativo">Ativo</option>
+                                        <option value="inativo">Inativo</option>
+                                        <option value="prospecto">Prospecto</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Estado</label>
+                                    <select id="clientState" class="form-select" onchange="populateCities()">
+                                        <option value="">Selecione um estado</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Cidade</label>
+                            <select id="clientCity" class="form-select">
+                                <option value="">Selecione uma cidade</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Observações</label>
+                            <textarea id="clientNotes" class="form-control" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-gradient" onclick="saveClient()">
+                        <i class="fas fa-save me-2"></i>Salvar Cliente
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Confirmar Exclusão
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Tem certeza que deseja excluir este cliente?</p>
+                    <p class="text-muted">Esta ação não pode ser desfeita.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" onclick="confirmDelete()">
+                        <i class="fas fa-trash me-2"></i>Excluir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Dados dos clientes (simulando uma base de dados)
+        let clients = [
+            {
+                id: 1,
+                name: "João Silva",
+                email: "joao@email.com",
+                phone: "(11) 99999-9999",
+                company: "Tech Solutions",
+                status: "ativo",
+                state: "SP",
+                city: "São Paulo",
+                notes: "Cliente premium, sempre pontual nos pagamentos."
+            },
+            {
+                id: 2,
+                name: "Maria Santos",
+                email: "maria@email.com",
+                phone: "(21) 88888-8888",
+                company: "Digital Marketing",
+                status: "prospecto",
+                state: "RJ",
+                city: "Rio de Janeiro",
+                notes: "Interessada em nossos serviços de consultoria."
+            },
+            {
+                id: 3,
+                name: "Pedro Oliveira",
+                email: "pedro@email.com",
+                phone: "(31) 77777-7777",
+                company: "StartupXYZ",
+                status: "ativo",
+                state: "MG",
+                city: "Belo Horizonte",
+                notes: "Startup em crescimento, ótimo potencial."
+            },
+            {
+                id: 4,
+                name: "Ana Costa",
+                email: "ana@email.com",
+                phone: "(47) 66666-6666",
+                company: "Consultoria ABC",
+                status: "inativo",
+                state: "SC",
+                city: "Florianópolis",
+                notes: "Contrato finalizado, manter contato."
+            }
+        ];
+
+        let editingClientId = null;
+        let clientToDelete = null;
+
+        // Data for Brazilian states and cities (more comprehensive list)
+        const brazilianStatesAndCities = {
+            "": [], // Default empty state for the initial option
+            "AC": ["Rio Branco", "Cruzeiro do Sul", "Sena Madureira", "Tarauacá", "Feijó"],
+            "AL": ["Maceió", "Arapiraca", "Rio Largo", "Palmeira dos Índios", "União dos Palmares"],
+            "AP": ["Macapá", "Santana", "Laranjal do Jari", "Oiapoque", "Porto Grande"],
+            "AM": ["Manaus", "Parintins", "Itacoatiara", "Manacapuru", "Coari"],
+            "BA": ["Salvador", "Feira de Santana", "Vitória da Conquista", "Camaçari", "Itabuna", "Ilhéus", "Juazeiro", "Lauro de Freitas"],
+            "CE": ["Fortaleza", "Caucaia", "Juazeiro do Norte", "Maracanaú", "Sobral", "Crato", "Itapipoca"],
+            "DF": ["Brasília", "Ceilândia", "Taguatinga", "Samambaia", "Plano Piloto"],
+            "ES": ["Vitória", "Vila Velha", "Serra", "Cariacica", "Linhares", "Colatina"],
+            "GO": ["Goiânia", "Aparecida de Goiânia", "Anápolis", "Rio Verde", "Luziânia", "Águas Lindas de Goiás"],
+            "MA": ["São Luís", "Imperatriz", "Açailândia", "Caxias", "Codó", "Bacabal", "Timon"],
+            "MT": ["Cuiabá", "Várzea Grande", "Rondonópolis", "Sinop", "Tangará da Serra", "Cáceres"],
+            "MS": ["Campo Grande", "Dourados", "Três Lagoas", "Corumbá", "Ponta Porã", "Naviraí"],
+            "MG": ["Belo Horizonte", "Uberlândia", "Contagem", "Juiz de Fora", "Betim", "Montes Claros", "Uberaba", "Governador Valadares"],
+            "PA": ["Belém", "Ananindeua", "Santarém", "Marabá", "Parauapebas", "Castanhal", "Altamira"],
+            "PB": ["João Pessoa", "Campina Grande", "Santa Rita", "Patos", "Sousa", "Cabedelo"],
+            "PR": ["Curitiba", "Londrina", "Maringá", "Ponta Grossa", "Cascavel", "São José dos Pinhais", "Foz do Iguaçu"],
+            "PE": ["Recife", "Jaboatão dos Guararapes", "Olinda", "Caruaru", "Petrolina", "Paulista", "Garanhuns"],
+            "PI": ["Teresina", "Parnaíba", "Picos", "Piripiri", "Floriano", "Campo Maior"],
+            "RJ": ["Rio de Janeiro", "Nova Iguaçu", "Duque de Caxias", "São Gonçalo", "Niterói", "Campos dos Goytacazes", "Petrópolis"],
+            "RN": ["Natal", "Mossoró", "Parnamirim", "São Gonçalo do Amarante", "Macaíba", "Ceará-Mirim"],
+            "RS": ["Porto Alegre", "Caxias do Sul", "Canoas", "Pelotas", "Santa Maria", "Gravataí", "Viamão"],
+            "RO": ["Porto Velho", "Ji-Paraná", "Ariquemes", "Cacoal", "Vilhena", "Jaru"],
+            "RR": ["Boa Vista", "Rorainópolis", "Caracaraí", "Cantá", "Bonfim"],
+            "SC": ["Florianópolis", "Joinville", "Blumenau", "São José", "Chapecó", "Criciúma", "Itajaí"],
+            "SP": ["São Paulo", "Guarulhos", "Campinas", "São Bernardo do Campo", "Santo André", "Osasco", "São José dos Campos", "Ribeirão Preto", "Sorocaba", "Santos"],
+            "SE": ["Aracaju", "Nossa Senhora do Socorro", "Lagarto", "Itabaiana", "Estância", "Tobias Barreto"],
+            "TO": ["Palmas", "Araguaína", "Gurupi", "Porto Nacional", "Paraíso do Tocantins", "Colinas do Tocantins"]
+        };
+
+
+        // Function to populate the state dropdown
+        function populateStatesDropdown() {
+            const selectElement = document.getElementById('clientState');
+            selectElement.innerHTML = '<option value="">Selecione um estado</option>'; // Default option
+            const sortedStates = Object.keys(brazilianStatesAndCities).sort();
+            sortedStates.forEach(state => {
+                if (state) { // Avoid creating an option for the empty key
+                    const option = document.createElement('option');
+                    option.value = state;
+                    option.textContent = state;
+                    selectElement.appendChild(option);
+                }
+            });
+        }
+
+        // Function to populate cities based on selected state
+        function populateCities() {
+            const stateSelect = document.getElementById('clientState');
+            const citySelect = document.getElementById('clientCity');
+            const selectedState = stateSelect.value;
+
+            citySelect.innerHTML = '<option value="">Selecione uma cidade</option>'; // Reset cities
+
+            if (selectedState && brazilianStatesAndCities[selectedState]) {
+                brazilianStatesAndCities[selectedState].sort().forEach(city => {
+                    const option = document.createElement('option');
+                    option.value = city;
+                    option.textContent = city;
+                    citySelect.appendChild(option);
+                });
+            }
+        }
+
+        // Função para obter as iniciais do nome
+        function getInitials(name) {
+            return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+        }
+
+        // Função para obter a classe CSS do status
+        function getStatusClass(status) {
+            const statusClasses = {
+                'ativo': 'bg-success',
+                'inativo': 'bg-secondary',
+                'prospecto': 'bg-warning text-dark'
+            };
+            return statusClasses[status] || 'bg-secondary';
+        }
+
+        // Função para renderizar os clientes
+        function renderClients(clientsToRender = clients) {
+            const clientsList = document.getElementById('clientsList');
+            const emptyState = document.getElementById('emptyState');
+            const clientCount = document.getElementById('clientCount');
+
+            if (clientsToRender.length === 0) {
+                clientsList.innerHTML = '';
+                emptyState.style.display = 'block';
+                clientCount.textContent = '0';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            clientCount.textContent = clientsToRender.length;
+
+            clientsList.innerHTML = clientsToRender.map(client => `
+                <div class="col-md-6 col-lg-4 mb-4 fade-in">
+                    <div class="card client-card h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="client-avatar me-3">
+                                    ${getInitials(client.name)}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h5 class="card-title mb-1">${client.name}</h5>
+                                    <span class="badge status-badge ${getStatusClass(client.status)}">
+                                        ${client.status.charAt(0).toUpperCase() + client.status.slice(1)}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="mb-2">
+                                <small class="text-muted"><i class="fas fa-envelope me-2"></i></small>
+                                <small>${client.email}</small>
+                            </div>
+
+                            ${client.phone ? `
+                            <div class="mb-2">
+                                <small class="text-muted"><i class="fas fa-phone me-2"></i></small>
+                                <small>${client.phone}</small>
+                            </div>
+                            ` : ''}
+
+                            ${client.company ? `
+                            <div class="mb-2">
+                                <small class="text-muted"><i class="fas fa-building me-2"></i></small>
+                                <small>${client.company}</small>
+                            </div>
+                            ` : ''}
+
+                            ${client.city && client.state ? `
+                            <div class="mb-3">
+                                <small class="text-muted"><i class="fas fa-map-marker-alt me-2"></i></small>
+                                <small>${client.city} - ${client.state}</small>
+                            </div>
+                            ` : ''}
+
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-outline-primary btn-sm flex-fill" onclick="editClient(${client.id})">
+                                    <i class="fas fa-edit me-1"></i>Editar
+                                </button>
+                                <button class="btn btn-outline-danger btn-sm flex-fill" onclick="deleteClient(${client.id})">
+                                    <i class="fas fa-trash me-1"></i>Excluir
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Função para filtrar clientes
+        function filterClients() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+
+            const filteredClients = clients.filter(client => {
+                const matchesSearch = client.name.toLowerCase().includes(searchTerm) ||
+                                         client.email.toLowerCase().includes(searchTerm) ||
+                                         (client.company && client.company.toLowerCase().includes(searchTerm)) ||
+                                         (client.city && client.city.toLowerCase().includes(searchTerm)) ||
+                                         (client.state && client.state.toLowerCase().includes(searchTerm));
+
+                const matchesStatus = !statusFilter || client.status === statusFilter;
+
+                return matchesSearch && matchesStatus;
+            });
+
+            renderClients(filteredClients);
+        }
+
+        // Função para abrir modal de criação
+        function openCreateModal() {
+            editingClientId = null;
+            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-user-plus me-2"></i>Novo Cliente';
+            document.getElementById('clientForm').reset();
+            populateStatesDropdown(); // Populate states
+            document.getElementById('clientCity').innerHTML = '<option value="">Selecione uma cidade</option>'; // Clear cities
+        }
+
+        // Função para editar cliente
+        function editClient(id) {
+            const client = clients.find(c => c.id === id);
+            if (!client) return;
+
+            editingClientId = id;
+            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-user-edit me-2"></i>Editar Cliente';
+
+            document.getElementById('clientName').value = client.name;
+            document.getElementById('clientEmail').value = client.email;
+            document.getElementById('clientPhone').value = client.phone || '';
+            document.getElementById('clientCompany').value = client.company || '';
+            document.getElementById('clientStatus').value = client.status;
+
+            populateStatesDropdown(); // Populate states first
+            document.getElementById('clientState').value = client.state || ''; // Set client's state
+            populateCities(); // Then populate cities based on that state
+            document.getElementById('clientCity').value = client.city || ''; // Set client's city
+
+            document.getElementById('clientNotes').value = client.notes || '';
+
+            new bootstrap.Modal(document.getElementById('clientModal')).show();
+        }
+
+        // Função para salvar cliente
+        function saveClient() {
+            const name = document.getElementById('clientName').value.trim();
+            const email = document.getElementById('clientEmail').value.trim();
+            const state = document.getElementById('clientState').value.trim();
+            const city = document.getElementById('clientCity').value.trim();
+
+            if (!name || !email) {
+                alert('Nome e email são obrigatórios!');
+                return;
+            }
+
+            const clientData = {
+                name: name,
+                email: email,
+                phone: document.getElementById('clientPhone').value.trim(),
+                company: document.getElementById('clientCompany').value.trim(),
+                status: document.getElementById('clientStatus').value,
+                state: state,
+                city: city,
+                notes: document.getElementById('clientNotes').value.trim()
+            };
+
+            if (editingClientId) {
+                // Atualizar cliente existente
+                const clientIndex = clients.findIndex(c => c.id === editingClientId);
+                clients[clientIndex] = { ...clients[clientIndex], ...clientData };
+            } else {
+                // Criar novo cliente
+                const newId = clients.length > 0 ? Math.max(...clients.map(c => c.id)) + 1 : 1; // Handle empty array
+                clients.push({ id: newId, ...clientData });
+            }
+
+            bootstrap.Modal.getInstance(document.getElementById('clientModal')).hide();
+            filterClients();
+        }
+
+        // Função para deletar cliente
+        function deleteClient(id) {
+            clientToDelete = id;
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+
+        // Função para confirmar exclusão
+        function confirmDelete() {
+            if (clientToDelete) {
+                clients = clients.filter(c => c.id !== clientToDelete);
+                clientToDelete = null;
+                bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+                filterClients();
+            }
+        }
+
+        // Event listeners
+        document.getElementById('searchInput').addEventListener('input', filterClients);
+        document.getElementById('statusFilter').addEventListener('change', filterClients);
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            populateStatesDropdown(); // Populate state dropdown on page load
+            renderClients();
+        });
+    </script>
+</body>
+</html>
