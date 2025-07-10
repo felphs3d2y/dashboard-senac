@@ -360,7 +360,9 @@
                     <input type="password" id="password" placeholder=" ">
                     <label for="password">Senha</label>
                 </div>
-                <button type="submit" class="login-btn">Entrar</button>
+             <a href="./app.html"></a><button type="submit"
+             class="login-btn">Entrar</button></a>
+                
                 <p id="message" class="message"></p>
                 <div class="signup">
                     Não tem conta? <a href="#">Sign Up</a>
@@ -391,7 +393,7 @@
                     messageElement.textContent = 'Login bem-sucedido!';
                     messageElement.classList.add('success', 'show');
                     setTimeout(() => {
-                        window.location.href = 'index3.html'; // Redirect to index3.html
+                        window.location.href = 'app.html'; // vai
                     }, 1500); // Increased delay slightly
                 } else {
                     messageElement.textContent = 'Usuário ou senha incorretos.';
